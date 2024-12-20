@@ -1,4 +1,3 @@
-
 def base_x_to_dec(base_list, x):
     return int(''.join(map(str, base_list)), base=x)
 
@@ -15,4 +14,4 @@ def dec_to_base_x(dec, x):
 
 
 def list_to_matrix(list, dim):
-    return [list[i:i+dim] for i in range(0, len(list), dim)]
+    return [list[i:i + dim] for i in range(0, len(list), dim)]

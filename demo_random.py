@@ -1,16 +1,17 @@
-import gym
-import gym_tictactoe
 import itertools
+
+import gymnasium as gym
 
 
 def main():
-    env = gym.make('gym_tictactoe:tictactoe-v0')
+    env = gym.make('gym_tictactoe:tictactoe-v1')
 
-    observation = env.reset()
+    observation, info = env.reset()
     while True:
         player = next_player()
         position = env.action_space.sample()[1]
-        observation, reward, done, info = env.step((player, position))
+        observation, reward, terminated, truncated, info = env.step((player, position))
+        done = terminated or truncated
         env.render()
 
         if done:

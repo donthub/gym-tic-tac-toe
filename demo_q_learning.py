@@ -1,10 +1,8 @@
-import gym
-import numpy as np
-import random
 import pickle
-import os.path
+import random
 
-import gym_tictactoe
+import gymnasium as gym
+import numpy as np
 
 
 def create_Q(env):
@@ -47,11 +45,11 @@ def get_next_envs(env, turn):
             by looking at all possible moves given the player at turn
     """
 
-    free_moves = env.get_valid_moves()
+    free_moves = env.unwrapped.get_valid_moves()
     next_envs = []
     for free_move in free_moves:
         env_copy = gym.make(
-            'gym_tictactoe:tictactoe-v0', size=size, num_winning=num_winning)
+            'gym_tictactoe:tictactoe-v1', size=size, num_winning=num_winning)
         env_copy.s = env.s
         env_copy.step((turn, free_move))
         next_envs.append(env_copy)
@@ -76,11 +74,11 @@ def minmax_state_value(env, player, turn):
     """
 
     # end cases
-    if env._is_win(player+1):
+    if env.unwrapped.is_win(player + 1):
         return 1
-    elif env._is_win(int(not player)+1):
+    elif env.unwrapped.is_win(int(not player) + 1):
         return -1
-    elif env._is_full():
+    elif env.unwrapped.is_full():
         return 0
 
     # build possible next boards given which player is at turn
@@ -105,7 +103,8 @@ def opponent_minmax(env, player=1):
             b = field to place stone by index
     """
     (next_envs, free_moves) = get_next_envs(env, player)
-    return (player, free_moves[np.argmax([minmax_state_value(next_env, player, int(not player)) for next_env in next_envs])])
+    return (
+    player, free_moves[np.argmax([minmax_state_value(next_env, player, int(not player)) for next_env in next_envs])])
 
 
 def opponent_random(env, player=1):
@@ -141,7 +140,7 @@ def opponent_random_better(env, player=1):
             b = field to place stone by index
     """
 
-    valid_moves = env.get_valid_moves()
+    valid_moves = env.unwrapped.get_valid_moves()
     return (player, random.choice(valid_moves))
 
 
@@ -163,7 +162,7 @@ def opponent_human(env, player=1):
     while action == [player, None] or not env.action_space.contains(action):
         print('Pick a move: ', end='')
         user_input = input()
-        action[1] = int(user_input)-1 if user_input.isdigit() else None
+        action[1] = int(user_input) - 1 if user_input.isdigit() else None
     return tuple(action)
 
 
@@ -212,7 +211,7 @@ def play_one(env, Q, opponent, render=False, update=True, first=True, explore=Tr
 
     action_space = env.action_space
 
-    state = env.reset()
+    state, info = env.reset()
 
     done = False
     agent_moved = False
@@ -225,18 +224,18 @@ def play_one(env, Q, opponent, render=False, update=True, first=True, explore=Tr
         # Agent moves, skip in first round if second
         if first or opponent_moved:
             action = agent_move(action_space, state, Q, explore)
-            (next_state, agent_reward, done, info) = env.step(action)
+            (next_state, agent_reward, terminated, truncated, info) = env.step(action)
+            done = terminated or truncated
             agent_moved = True
             old_value = Q[state, action]
 
-            [print('Agent moved:'),
-                env.render(), print()] if render else None
+            [print('Agent moved:'), env.render(), print()] if render else None
 
         # Opponent makes a move, but only if not done
         if not done:
             opponent_action = opponent(env)
-            (next_state, opponent_reward, done,
-                info) = env.step(opponent_action)
+            (next_state, opponent_reward, terminated, truncated, info) = env.step(opponent_action)
+            done = terminated or truncated
             opponent_moved = True
 
             [env.render(), print()] if render else None
@@ -253,9 +252,9 @@ def play_one(env, Q, opponent, render=False, update=True, first=True, explore=Tr
 
     # Game finished, get outcome for agent
     outcome = None
-    if env._is_win(1):
+    if env.unwrapped.is_win(1):
         outcome = 'win'
-    elif env._is_win(2):
+    elif env.unwrapped.is_win(2):
         outcome = 'loss'
     else:
         outcome = 'drawn'
@@ -342,7 +341,7 @@ def main():
     """
 
     # create environment
-    env = gym.make('gym_tictactoe:tictactoe-v0',
+    env = gym.make('gym_tictactoe:tictactoe-v1',
                    size=size, num_winning=num_winning)
 
     # create empty Q-Table or preload
@@ -356,8 +355,8 @@ def main():
     pickle.dump(Q, open("q_table.p", "wb"))
 
     # Test
-    print(f'Testing for {int(epochs/10)} epochs')
-    wins, losses, drawns = test(int(epochs/10), env, Q, opponent_random_better)
+    print(f'Testing for {int(epochs / 10)} epochs')
+    wins, losses, drawns = test(int(epochs / 10), env, Q, opponent_random_better)
     print(f'Wins: {wins}, Losses: {losses}, Drawns: {drawns}')
 
     # Play against human player

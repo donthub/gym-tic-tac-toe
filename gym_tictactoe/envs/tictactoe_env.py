@@ -1,11 +1,17 @@
-import gym
-from gym import error, spaces, utils
-from gym.utils import seeding
+from typing import Any
+
+import gymnasium as gym
+from gymnasium import spaces
+from gymnasium.core import ObsType
+
 from .helpers import *
 
 
 class TictactoeEnv(gym.Env):
-    metadata = {'render.modes': ['human']}
+    metadata = {
+        'render_modes': ['human'],
+        'render_fps': 1
+    }
 
     def __init__(self, size=3, num_winning=3, reward_normal=0, reward_win=10, reward_violation=0, reward_drawn=0):
         """
@@ -37,7 +43,7 @@ class TictactoeEnv(gym.Env):
 
         self.num_winning = num_winning
         self.size = size
-        self.num_fields = size**2
+        self.num_fields = size ** 2
         self.observation_space = spaces.Discrete(3 ** self.num_fields)
         self.action_space = spaces.MultiDiscrete([2, self.num_fields])
 
@@ -67,18 +73,18 @@ class TictactoeEnv(gym.Env):
         """
 
         player = action[0] + 1
-        done = False
+        terminated = False
         info = ''
 
-        action_successful = self._turn(action)
+        action_successful = self.turn(action)
         if not action_successful:
             info = 'invalid move'
             reward = self.reward_violation
         else:
-            if self._is_full():
-                done = True
+            if self.is_full():
+                terminated = True
 
-                if self._is_win(player):
+                if self.is_win(player):
                     info = 'winning move'
                     reward = self.reward_win
                 else:
@@ -86,18 +92,23 @@ class TictactoeEnv(gym.Env):
                     reward = self.reward_drawn
 
             else:
-                if self._is_win(player):
+                if self.is_win(player):
                     info = 'winning move'
                     reward = self.reward_win
-                    done = True
+                    terminated = True
                 else:
                     info = 'normal move'
                     reward = self.reward_normal
 
         observation = self.s
-        return observation, reward, done, info + f' player {player}'
+        return observation, reward, terminated, False, {'info': info, 'player': player}
 
-    def reset(self):
+    def reset(
+            self,
+            *,
+            seed: int | None = None,
+            options: dict[str, Any] | None = None,
+    ) -> tuple[ObsType, dict[str, Any]]:
         """
         Resets the environment to the beginning state where the board is empty
 
@@ -109,8 +120,8 @@ class TictactoeEnv(gym.Env):
         """
 
         grid = [[0 for _ in range(self.size)] for _ in range(self.size)]
-        self.s = self._encode(grid)
-        return self.s
+        self.s = self.encode(grid)
+        return self.s, {}
 
     def render(self):
         """
@@ -123,7 +134,7 @@ class TictactoeEnv(gym.Env):
             -
         """
 
-        grid = self._decode(self.s)
+        grid = self.decode(self.s)
         print_chars = [' ', 'O', 'X']
 
         rows = len(grid)
@@ -146,12 +157,12 @@ class TictactoeEnv(gym.Env):
             List of indices that represent free board positions as indices starting by 0
         """
 
-        grid = self._decode(self.s)
+        grid = self.decode(self.s)
         grid_flattened = [item for sublist in grid for item in sublist]
         return [i for i in range(len(grid_flattened)) if grid_flattened[i] == 0]
 
     # grid to dec
-    def _encode(self, grid):
+    def encode(self, grid):
         """
         Encodes a grid representation into a decimal identifying value.
 
@@ -171,7 +182,7 @@ class TictactoeEnv(gym.Env):
         return base_x_to_dec(grid_flat_rev, 3)
 
     # dec to grid
-    def _decode(self, dec):
+    def decode(self, dec):
         """
         Decodes a board state into a 2-D grid representation.
 
@@ -195,7 +206,7 @@ class TictactoeEnv(gym.Env):
 
         return grid
 
-    def _turn(self, action):
+    def turn(self, action):
         """
         Placing a stone on the board given an action.
 
@@ -209,7 +220,7 @@ class TictactoeEnv(gym.Env):
         player = action[0] + 1
         place = action[1]
 
-        grid = self._decode(self.s)
+        grid = self.decode(self.s)
         grid_flat = [item for sublist in grid for item in sublist]
 
         if grid_flat[place] != 0:
@@ -219,10 +230,10 @@ class TictactoeEnv(gym.Env):
             # valid move
             grid_flat[place] = player
             new_grid = list_to_matrix(grid_flat, self.size)
-            self.s = self._encode(new_grid)
+            self.s = self.encode(new_grid)
             return True
 
-    def _is_win(self, player):
+    def is_win(self, player):
         """
         Checks is winning state for player given the attribute num_winning that is optinally passed on init.
 
@@ -233,7 +244,7 @@ class TictactoeEnv(gym.Env):
             True if player has won, otherwise false
         """
 
-        grid = self._decode(self.s)
+        grid = self.decode(self.s)
 
         rows = len(grid)
         cols = len(grid[0])
@@ -270,7 +281,7 @@ class TictactoeEnv(gym.Env):
 
         return False
 
-    def _is_full(self):
+    def is_full(self):
         """
         Checks if full board.
 
@@ -281,7 +292,7 @@ class TictactoeEnv(gym.Env):
             True if board is full, otherwise False
         """
 
-        grid = self._decode(self.s)
+        grid = self.decode(self.s)
         grid_flat = [item for sublist in grid for item in sublist]
         if sum(1 for i in grid_flat if i != 0) == len(grid_flat):
             return True
