@@ -32,14 +32,14 @@ class TestGym(unittest.TestCase):
         custom_win_reward = 1000
         custom_normal_reward = -2
         custom_violation_reward = -5
-        custom_drawn_reward = -1
+        custom_draw_reward = -1
         custom_size = 4
 
         env: TictactoeEnv = gym.make('gym_tictactoe:tictactoe-v1',
                                      reward_win=custom_win_reward,
                                      reward_normal=custom_normal_reward,
                                      reward_violation=custom_violation_reward,
-                                     reward_drawn=custom_drawn_reward,
+                                     reward_draw=custom_draw_reward,
                                      size=custom_size).unwrapped
         env.reset()
 
@@ -47,7 +47,7 @@ class TestGym(unittest.TestCase):
         self.assertEqual(env.reward_win, custom_win_reward)
         self.assertEqual(env.reward_normal, custom_normal_reward)
         self.assertEqual(env.reward_violation, custom_violation_reward)
-        self.assertEqual(env.reward_drawn, custom_drawn_reward)
+        self.assertEqual(env.reward_draw, custom_draw_reward)
 
         # check action and observation space
         self.assertEqual(env.action_space, spaces.MultiDiscrete(
@@ -208,15 +208,15 @@ class TestGym(unittest.TestCase):
         self.assertEqual(info['info'], 'winning move')
         self.assertEqual(info['player'], 1)
 
-        # drawn move
+        # draw move
         env.s = env.encode([[0, 2, 1], [2, 1, 1], [2, 1, 2]])
         (observation, reward, terminated, truncated, info) = env.step([0, 0])
         self.assertEqual(env.decode(observation), [
             [1, 2, 1], [2, 1, 1], [2, 1, 2]])
-        self.assertEqual(reward, env.reward_drawn)
+        self.assertEqual(reward, env.reward_draw)
         self.assertEqual(terminated, True)
         self.assertEqual(truncated, False)
-        self.assertEqual(info['info'], 'drawn move')
+        self.assertEqual(info['info'], 'draw move')
         self.assertEqual(info['player'], 1)
 
     def test_get_valid_moves(self):

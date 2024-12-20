@@ -53,7 +53,7 @@ class AgentQLearning:
         Returns:
             Tuple of (a, b) where
                 a = (updated) Q-Table
-                b = outcome of the move = {None, 'win', 'loss', 'drawn'}
+                b = outcome of the move = {None, 'win', 'loss', 'draw'}
         """
 
         state, info = self.env.reset()
@@ -69,7 +69,7 @@ class AgentQLearning:
             # Agent moves, skip in first round if second
             if first or opponent_moved:
                 action = self.agent_move(state, explore)
-                (next_state, agent_reward, terminated, truncated, info) = self.env.step(action)
+                next_state, agent_reward, terminated, truncated, info = self.env.step(action)
                 done = terminated or truncated
                 agent_moved = True
                 old_value = self.Q[state, action]
@@ -79,7 +79,7 @@ class AgentQLearning:
             # Opponent makes a move, but only if not done
             if not done:
                 opponent_action = opponent(self.env)
-                (next_state, opponent_reward, terminated, truncated, info) = self.env.step(opponent_action)
+                next_state, opponent_reward, terminated, truncated, info = self.env.step(opponent_action)
                 done = terminated or truncated
                 opponent_moved = True
 
@@ -102,7 +102,7 @@ class AgentQLearning:
         elif self.env.unwrapped.is_win(2):
             outcome = 'loss'
         else:
-            outcome = 'drawn'
+            outcome = 'draw'
 
         return self.Q, outcome
 

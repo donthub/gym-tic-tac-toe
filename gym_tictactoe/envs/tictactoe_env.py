@@ -1,3 +1,4 @@
+import random
 from typing import Any
 
 import gymnasium as gym
@@ -13,7 +14,14 @@ class TictactoeEnv(gym.Env):
         'render_fps': 1
     }
 
-    def __init__(self, size=3, num_winning=3, reward_normal=0, reward_win=10, reward_violation=0, reward_drawn=0):
+    def __init__(self,
+                 size=3,
+                 num_winning=3,
+                 reward_normal=0,
+                 reward_win=10,
+                 reward_violation=0,
+                 reward_draw=0,
+                 exploring_starts=False):
         """
         Initializes an Tic-Tac-Toe Open AI gym environment.
         Make sure to call the reset function to reset to an empty space before making a move.
@@ -35,7 +43,7 @@ class TictactoeEnv(gym.Env):
             reward_normal=0: Reward for a standard valid move
             reward_win=10: Reward for winning
             reward_violation=0: Reward if invalid move, move on already placed position
-            reward_drawn=0: Reward for Drawn
+            reward_draw=0: Reward for Draw
 
         Returns:
             -
@@ -51,7 +59,9 @@ class TictactoeEnv(gym.Env):
         self.reward_normal = reward_normal
         self.reward_win = reward_win
         self.reward_violation = reward_violation
-        self.reward_drawn = reward_drawn
+        self.reward_draw = reward_draw
+
+        self.exploring_starts = exploring_starts
 
     def step(self, action):
         """
@@ -88,8 +98,8 @@ class TictactoeEnv(gym.Env):
                     info = 'winning move'
                     reward = self.reward_win
                 else:
-                    info = 'drawn move'
-                    reward = self.reward_drawn
+                    info = 'draw move'
+                    reward = self.reward_draw
 
             else:
                 if self.is_win(player):
@@ -119,9 +129,44 @@ class TictactoeEnv(gym.Env):
             -
         """
 
-        grid = [[0 for _ in range(self.size)] for _ in range(self.size)]
+        if self.exploring_starts:
+            grid = self.get_exploring_starts_grid()
+        else:
+            grid = [[0 for _ in range(self.size)] for _ in range(self.size)]
+
         self.s = self.encode(grid)
         return self.s, {}
+
+    def get_exploring_starts_grid(self):
+        grid = [[0 for _ in range(self.size)] for _ in range(self.size)]
+
+        free_spaces = []
+        for i in range(self.size):
+            for j in range(self.size):
+                free_spaces.append((i, j))
+
+        player = 1
+        take_spaces_num = random.randint(0, self.num_fields - 1)
+        for i in range(take_spaces_num):
+            free_space_selection_queue = random.sample(range(len(free_spaces)), len(free_spaces) - 1)
+            done = False
+
+            while not done and len(free_space_selection_queue) > 0:
+                free_space_selection = free_space_selection_queue.pop()
+                free_space = free_spaces[free_space_selection]
+                grid[free_space[0]][free_space[1]] = player
+                self.s = self.encode(grid)
+                if self.is_win(player):
+                    grid[free_space[0]][free_space[1]] = 0
+                else:
+                    free_spaces.pop(free_space_selection)
+                    player = player % 2 + 1
+                    done = True
+
+            if len(free_space_selection_queue) == 0:
+                return grid
+
+        return grid
 
     def render(self):
         """
@@ -235,7 +280,7 @@ class TictactoeEnv(gym.Env):
 
     def is_win(self, player):
         """
-        Checks is winning state for player given the attribute num_winning that is optinally passed on init.
+        Checks is winning state for player given the attribute num_winning that is optionally passed on init.
 
         Args:
             player: Player to check, either 1 or 2

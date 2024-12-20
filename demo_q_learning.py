@@ -1,4 +1,5 @@
 import random
+import sys
 
 import gymnasium as gym
 import numpy as np
@@ -22,7 +23,7 @@ def get_next_envs(env, turn):
     free_moves = env.unwrapped.get_valid_moves()
     next_envs = []
     for free_move in free_moves:
-        env_copy = gym.make('gym_tictactoe:tictactoe-v1', size=size, num_winning=num_winning)
+        env_copy = gym.make('gym_tictactoe:tictactoe-v1')
         env_copy.unwrapped.s = env.unwrapped.s
         env_copy.step((turn, free_move))
         next_envs.append(env_copy)
@@ -155,9 +156,15 @@ def train(agent, epochs, opponents):
 
     is_first = True
     for i in range(epochs):
+        # monitor progress
+        if i % 1000 == 0:
+            print("\rEpisode {}/{}.".format(i, epochs), end="")
+            sys.stdout.flush()
+
         agent.play_one(random.choice(opponents), first=is_first)
         is_first = not is_first
 
+    print()
     return agent.Q
 
 
@@ -179,6 +186,10 @@ def test(agent, epochs, opponent, render=False):
     outcome_list = [None for i in range(epochs)]
     is_first = True
     for i in range(epochs):
+        if i % 1000 == 0:
+            print("\rEpisode {}/{}.".format(i, epochs), end="")
+            sys.stdout.flush()
+
         (_, outcome_agent) = agent.play_one(opponent, render=render, first=is_first, update=False, explore=False)
 
         if render:
@@ -187,16 +198,17 @@ def test(agent, epochs, opponent, render=False):
             elif outcome_agent == 'loss':
                 print('You won')
             else:
-                print('Drawn')
+                print('Draw')
 
         outcome_list[i] = outcome_agent
         is_first = not is_first
 
+    print()
     wins = sum(1 for i in outcome_list if i == 'win')
     losses = sum(1 for i in outcome_list if i == 'loss')
-    drawns = sum(1 for i in outcome_list if i == 'drawn')
+    draws = sum(1 for i in outcome_list if i == 'draw')
 
-    return wins, losses, drawns
+    return wins, losses, draws
 
 
 def main():
@@ -216,40 +228,42 @@ def main():
     """
 
     # create environment
-    env = gym.make('gym_tictactoe:tictactoe-v1', size=size, num_winning=num_winning)
+    env = gym.make('gym_tictactoe:tictactoe-v1')
 
-    agent = AgentQLearning(env, epsilon=epsilon, alpha=alpha, gamma=gamma)
+    print('Select mode:')
+    print('1: Train')
+    print('2: Train from scratch')
+    print('3: Test')
+    from_scratch = False
+    do_train = True
+    selected_mode = input('Selected mode: ')
+    if selected_mode == str(2):
+        from_scratch = True
+    elif selected_mode == str(3):
+        do_train = False
 
+    agent = AgentQLearning(env, from_scratch=from_scratch)
+
+    epochs = 500_000
     # Play against a random player and learn
-    print(f'Learning for {epochs} epochs')
-    train(agent, epochs, [opponent_random, opponent_random_better])
-    print(f'Finished!')
-    print('Saving Q-Table')
-    agent.export()
+    if do_train:
+        epochs = int(input(f'Number of epochs (default: {epochs}): ').strip() or str(epochs))
+        print(f'Learning for {epochs} epochs')
+        train(agent, epochs, [opponent_random, opponent_random_better])
+        print(f'Finished!')
+        print('Saving Q-Table')
+        agent.export()
 
     # Test
     print(f'Testing for {int(epochs / 10)} epochs')
     wins, losses, draws = test(agent, int(epochs / 10), opponent_random_better)
-    print(f'Wins: {wins}, Losses: {losses}, Drawns: {draws}')
+    print(f'Wins: {wins}, Losses: {losses}, Draws: {draws}')
 
     # Play against human player
     print(f'Playing 4 games against human player')
     losses, wins, draws = test(agent, 4, opponent_human, render=True)
-    print(f'Wins: {wins}, Losses: {losses}, Drawns: {draws}')
+    print(f'Wins: {wins}, Losses: {losses}, Draws: {draws}')
 
-
-# Hyperparameters
-epsilon = 0.1  # exploration rate
-alpha = 0.1  # learning rate
-gamma = 0.8  # discount factor
-epochs = 500000  # number of games played while training
-
-# other
-from_scratch = False
-
-# Board settings
-size = 3
-num_winning = 3
 
 if __name__ == '__main__':
     main()
