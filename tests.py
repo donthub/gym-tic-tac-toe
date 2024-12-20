@@ -75,11 +75,11 @@ class TestGym(unittest.TestCase):
     def test_decode(self):
         # 3 x 3
         env: TictactoeEnv = gym.make('gym_tictactoe:tictactoe-v1').unwrapped
-        self.assertEqual(env.unwrapped.decode(0), [[0] * 3] * 3)
-        self.assertEqual(env.unwrapped.decode(19682), [[2] * 3] * 3)
-        self.assertEqual(env.unwrapped.decode(6561), [[0, 0, 0], [0, 0, 0], [0, 0, 1]])
-        self.assertEqual(env.unwrapped.decode(1), [[1, 0, 0], [0, 0, 0], [0, 0, 0]])
-        self.assertEqual(env.unwrapped.decode(18618), [[0, 2, 1], [2, 1, 1], [1, 2, 2]])
+        self.assertEqual(env.decode(0), [[0] * 3] * 3)
+        self.assertEqual(env.decode(19682), [[2] * 3] * 3)
+        self.assertEqual(env.decode(6561), [[0, 0, 0], [0, 0, 0], [0, 0, 1]])
+        self.assertEqual(env.decode(1), [[1, 0, 0], [0, 0, 0], [0, 0, 0]])
+        self.assertEqual(env.decode(18618), [[0, 2, 1], [2, 1, 1], [1, 2, 2]])
 
         # 4 x 4
         env: TictactoeEnv = gym.make('gym_tictactoe:tictactoe-v1', size=4).unwrapped
@@ -103,12 +103,12 @@ class TestGym(unittest.TestCase):
         env.reset()
 
         self.assertEqual(env.turn([0, 0]), True)
-        self.assertEqual(env.decode(env.unwrapped.s), [[1, 0, 0], [0, 0, 0], [0, 0, 0]])
+        self.assertEqual(env.decode(env.s), [[1, 0, 0], [0, 0, 0], [0, 0, 0]])
         self.assertEqual(env.turn([0, 0]), False)
         self.assertEqual(env.turn([1, 0]), False)
 
         self.assertEqual(env.turn([1, 1]), True)
-        self.assertEqual(env.decode(env.unwrapped.s), [[1, 2, 0], [0, 0, 0], [0, 0, 0]])
+        self.assertEqual(env.decode(env.s), [[1, 2, 0], [0, 0, 0], [0, 0, 0]])
         self.assertEqual(env.turn([1, 1]), False)
         self.assertEqual(env.turn([0, 1]), False)
 
