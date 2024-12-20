@@ -50,7 +50,7 @@ def get_next_envs(env, turn):
     for free_move in free_moves:
         env_copy = gym.make(
             'gym_tictactoe:tictactoe-v1', size=size, num_winning=num_winning)
-        env_copy.s = env.s
+        env_copy.unwrapped.s = env.unwrapped.s
         env_copy.step((turn, free_move))
         next_envs.append(env_copy)
     return (next_envs, free_moves)

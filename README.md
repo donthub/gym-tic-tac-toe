@@ -58,13 +58,13 @@ To make a move, call the `step` - function:
 (observation, reward, done, info) = env.step([0, 3])  # 0 for player 1 and position 3
 # (27, 0, False, 'normal move')
 
-env.render()
+env.unwrapped.render()
 # | | | |
 # |O| | |
 # | | | |
 
 env.step([1, 2])  # 1 for player 2 and position 2
-env.render()
+env.unwrapped.render()
 # | | |X|
 # |O| | |
 # | | | |
@@ -74,16 +74,16 @@ env.render()
 
 ```python
 preset = [[0, 1, 2], [0, 0, 0], [1, 0, 2]]
-env.s = env.encode(preset)
-env.render()
+env.unwrapped.s = env.unwrapped.encode(preset)
+env.unwrapped.render()
 # | |O|X|
 # | | | |
 # |O| |X|
 
-print(env.s)
+print(env.unwrapped.s)
 # 13872
 
-board = env.decode(env.s)
+board = env.unwrapped.decode(env.unwrapped.s)
 # [[0, 1, 2], [0, 0, 0], [1, 0, 2]]
 ```
 
