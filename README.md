@@ -25,7 +25,7 @@ pip install -r requirements.txt
 
 ## Usage
 
-Make sure to have a look at the demo `demo_q_learning.py` where Q-Learning is used to train an agent.
+Make sure to have a look at the demo `demo_learning.py` where Q-Learning is used to train an agent.
 Or take a look at `demo_random.py` where two random opponents play against each other.
 
 ### Initialization

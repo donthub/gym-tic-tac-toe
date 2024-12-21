@@ -140,30 +140,30 @@ class TictactoeEnv(gym.Env):
     def get_exploring_starts_grid(self):
         grid = [[0 for _ in range(self.size)] for _ in range(self.size)]
 
-        free_spaces = []
+        free_moves = []
         for i in range(self.size):
             for j in range(self.size):
-                free_spaces.append((i, j))
+                free_moves.append((i, j))
 
         player = 1
-        take_spaces_num = random.randint(0, self.num_fields - 1)
-        for i in range(take_spaces_num):
-            free_space_selection_queue = random.sample(range(len(free_spaces)), len(free_spaces) - 1)
+        moves_num = random.randint(0, self.num_fields - 1)
+        for i in range(moves_num):
+            free_move_selection_queue = random.sample(range(len(free_moves)), len(free_moves) - 1)
             done = False
 
-            while not done and len(free_space_selection_queue) > 0:
-                free_space_selection = free_space_selection_queue.pop()
-                free_space = free_spaces[free_space_selection]
+            while not done and len(free_move_selection_queue) > 0:
+                free_space_selection = free_move_selection_queue.pop()
+                free_space = free_moves[free_space_selection]
                 grid[free_space[0]][free_space[1]] = player
                 self.s = self.encode(grid)
                 if self.is_win(player):
                     grid[free_space[0]][free_space[1]] = 0
                 else:
-                    free_spaces.pop(free_space_selection)
+                    free_moves.pop(free_space_selection)
                     player = player % 2 + 1
                     done = True
 
-            if len(free_space_selection_queue) == 0:
+            if len(free_move_selection_queue) == 0:
                 return grid
 
         return grid

@@ -3,6 +3,7 @@ import sys
 
 import gymnasium as gym
 import numpy as np
+from tqdm import tqdm
 
 from agent_q_learning import AgentQLearning
 
@@ -141,13 +142,13 @@ def opponent_human(env, player=1):
     return tuple(action)
 
 
-def train(agent, epochs, opponents):
+def train(agent, n_episodes, opponents):
     """
     Train the agent
 
     Args:
         agent: Agent
-        epochs: Number of epochs to train
+        n_episodes: Number of episodes to train
         opponents: list of opponents as functions (env) -> action to play against
 
     Returns:
@@ -155,27 +156,21 @@ def train(agent, epochs, opponents):
     """
 
     is_first = True
-    for i in range(epochs):
-        # monitor progress
-        if i % 1000 == 0:
-            print("\rEpisode {}/{}.".format(i, epochs), end="")
-            sys.stdout.flush()
-
+    for _ in tqdm(range(n_episodes), file=sys.stdout):
         agent.play_one(random.choice(opponents), first=is_first)
         is_first = not is_first
 
-    print()
     return agent.Q
 
 
-def test(agent, epochs, opponent, render=False):
+def test(agent, n_episodes, opponent, render=False):
     """
     Evaluate the performance of the agent by playing against one opponent.
     No exploration, no updates to Q-table.
 
     Args:
         agent: Agent
-        epochs: Number of epochs to train
+        n_episodes: Number of episodes to train
         opponent: opponent as function (env) -> action to play against
         render=False: If board shall be rendered and game outcome printed
 
@@ -183,13 +178,9 @@ def test(agent, epochs, opponent, render=False):
         Tuple (wins, losses, draws)
     """
 
-    outcome_list = [None for i in range(epochs)]
+    outcome_list = [None for i in range(n_episodes)]
     is_first = True
-    for i in range(epochs):
-        if i % 1000 == 0:
-            print("\rEpisode {}/{}.".format(i, epochs), end="")
-            sys.stdout.flush()
-
+    for episode in range(n_episodes) if render else tqdm(range(n_episodes), file=sys.stdout):
         (_, outcome_agent) = agent.play_one(opponent, render=render, first=is_first, update=False, explore=False)
 
         if render:
@@ -200,10 +191,10 @@ def test(agent, epochs, opponent, render=False):
             else:
                 print('Draw')
 
-        outcome_list[i] = outcome_agent
+        outcome_list[episode] = outcome_agent
         is_first = not is_first
+    sys.stderr.flush()
 
-    print()
     wins = sum(1 for i in outcome_list if i == 'win')
     losses = sum(1 for i in outcome_list if i == 'loss')
     draws = sum(1 for i in outcome_list if i == 'draw')
@@ -216,8 +207,8 @@ def main():
     Main function:
         1. Create environment
         2. Preload Q-table if present, otherwise create from scratch
-        3. Train for n epochs playing against random opponent
-        4. Test for n/10 epochs and show performance
+        3. Train for n episodes playing against random opponent
+        4. Test for n/10 episodes and show performance
         5. Play against human
 
     Args:
@@ -226,9 +217,6 @@ def main():
     Returns:
         -
     """
-
-    # create environment
-    env = gym.make('gym_tictactoe:tictactoe-v1')
 
     print('Select mode:')
     print('1: Train')
@@ -241,26 +229,33 @@ def main():
         from_scratch = True
     elif selected_mode == str(3):
         do_train = False
+    n_episodes = 500_000
+    if do_train:
+        n_episodes = int(input(f'Number of episodes (default: {n_episodes}): ').strip() or str(n_episodes))
 
+    # create environment
+    env = gym.make('gym_tictactoe:tictactoe-v1')
     agent = AgentQLearning(env, from_scratch=from_scratch)
 
-    epochs = 500_000
     # Play against a random player and learn
     if do_train:
-        epochs = int(input(f'Number of epochs (default: {epochs}): ').strip() or str(epochs))
-        print(f'Learning for {epochs} epochs')
-        train(agent, epochs, [opponent_random, opponent_random_better])
+        print(f'Learning for {n_episodes} episodes')
+        train(agent, n_episodes, [opponent_random, opponent_random_better])
         print(f'Finished!')
         print('Saving Q-Table')
         agent.export()
 
     # Test
-    print(f'Testing for {int(epochs / 10)} epochs')
-    wins, losses, draws = test(agent, int(epochs / 10), opponent_random_better)
+    n_episodes_test = int(n_episodes / 10)
+    print(f'Testing for {n_episodes_test} episodes')
+    wins, losses, draws = test(agent, n_episodes_test, opponent_random_better)
     print(f'Wins: {wins}, Losses: {losses}, Draws: {draws}')
 
     # Play against human player
     print(f'Playing 4 games against human player')
+    env.close()
+    env = gym.make('gym_tictactoe:tictactoe-v1')
+    agent.env = env
     losses, wins, draws = test(agent, 4, opponent_human, render=True)
     print(f'Wins: {wins}, Losses: {losses}, Draws: {draws}')
 
